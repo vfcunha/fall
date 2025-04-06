@@ -44,8 +44,16 @@ func (r *GormRepository[E, K]) FindByIds(ids []K) ([]*E, error) {
 	return entities, nil
 }
 
-func (r *GormRepository[E, K]) Delete(entity *K) error {
+func (r *GormRepository[E, K]) Delete(entity *E) error {
 	return r.DB.Delete(entity).Error
+}
+
+func (r *GormRepository[E, K]) DeleteById(id K) error {
+	err := r.DB.Delete(new(E), id).Error
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *GormRepository[E, K]) Update(entity *E) error {
