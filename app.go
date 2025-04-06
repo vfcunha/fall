@@ -2,20 +2,21 @@ package fall
 
 import (
 	"fmt"
-	"log"
 	"log/slog"
 	"net/http"
 )
 
 type App struct {
-	Env    Enviroment `env:"ENV" envDefault:"Development"`
-	router *Router
+	Env         Enviroment `env:"ENV" envDefault:"Development"`
+	router      *Router
+	middlewares []Middleware
 }
 
 func NewApp(env Enviroment, envConfig EnvConfiguration, middlewares ...Middleware) (*App, error) {
 	app := App{
-		Env:    env,
-		router: NewRouter("", middlewares...),
+		Env:         env,
+		router:      NewRouter(""),
+		middlewares: middlewares,
 	}
 	err := envConfig.Configure(env)
 	if err != nil {
@@ -37,8 +38,8 @@ func (a *App) SetControllers(controllers []Controller) {
 
 func (a *App) ListenAndServe(port string) {
 	slog.Info("HTTP Server started", "listenAddr", port)
-	http.ListenAndServe(fmt.Sprintf(":%s", port), a.router.Stack())
-	// http.ListenAndServe(fmt.Sprintf(":%s", port), LogRequest(a.router.Stack()))
+	stack := createStack(a.middlewares...)
+	http.ListenAndServe(fmt.Sprintf(":%s", port), stack(a.router))
 }
 
 func (a *App) GetRouter() *Router {
@@ -46,9 +47,18 @@ func (a *App) GetRouter() *Router {
 }
 
 func LogRequest(handler http.Handler) http.Handler {
-	// log.Printf("%s \n", "Log Request")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		slog.Info(fmt.Sprintf("%s %s %s", r.RemoteAddr, r.Method, r.URL))
 		handler.ServeHTTP(w, r)
-		log.Printf("%s %s %s\n", r.RemoteAddr, r.Method, r.URL)
 	})
+}
+
+func createStack(xs ...Middleware) Middleware {
+	return func(next http.Handler) http.Handler {
+		for i := len(xs) - 1; i >= 0; i-- {
+			x := xs[i]
+			next = x(next)
+		}
+		return next
+	}
 }
