@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"slices"
+	"strings"
 )
 
 type Middleware func(http.Handler) http.Handler
@@ -17,6 +18,7 @@ type Router struct {
 
 func NewRouter(prefix string, middlewares ...Middleware) *Router {
 	return &Router{
+		prefix:   prefix,
 		ServeMux: http.NewServeMux(),
 		chain:    middlewares,
 	}
@@ -29,14 +31,24 @@ func (r *Router) Use(mw ...Middleware) {
 func (r *Router) Group(prefix string, fn func(r *Router)) {
 	middlewares := slices.Clone(r.chain)
 	fn(&Router{
-		prefix:   prefix,
+		prefix:   r.path(prefix),
 		ServeMux: r.ServeMux,
 		chain:    middlewares,
 	})
 }
 
 func (r *Router) path(path string) string {
-	return fmt.Sprintf("/%s%s", r.prefix, path)
+	return fmt.Sprintf("%s%s", r.format(r.prefix), r.format(path))
+}
+
+func (r *Router) format(path string) string {
+	if path == "" {
+		return ""
+	}
+	if strings.HasPrefix(path, "/") {
+		return path
+	}
+	return "/" + path
 }
 
 func (r *Router) Get(path string, fn http.HandlerFunc, mws ...Middleware) {
@@ -59,7 +71,7 @@ func (r *Router) Patch(path string, fn http.HandlerFunc, mws ...Middleware) {
 	r.handle(http.MethodPatch, r.path(path), fn, mws...)
 }
 
-func (r *Router) Option(path string, fn http.HandlerFunc, mws ...Middleware) {
+func (r *Router) Options(path string, fn http.HandlerFunc, mws ...Middleware) {
 	r.handle(http.MethodOptions, r.path(path), fn, mws...)
 }
 
@@ -74,25 +86,4 @@ func (r *Router) wrap(fn http.HandlerFunc, mws ...Middleware) (out http.Handler)
 		out = mwss[i](out)
 	}
 	return out
-	// out, mwss := http.Handler(fn), append(slices.Clone(r.chain), mws...)
-	// slices.Reverse(mwss)
-	// for _, m := range mwss {
-	// 	out = m(out)
-	// }
-	// return
-}
-
-func (r *Router) Stack() (out http.Handler) {
-	stack := createStack(r.chain...)
-	return stack(r)
-}
-
-func createStack(xs ...Middleware) Middleware {
-	return func(next http.Handler) http.Handler {
-		for i := len(xs) - 1; i >= 0; i-- {
-			x := xs[i]
-			next = x(next)
-		}
-		return next
-	}
 }
