@@ -26,6 +26,15 @@ func (r *GormRepository[E, K]) SaveAll(list []*E) ([]*E, error) {
 	return list, nil
 }
 
+func (r *GormRepository[E, K]) FindAll() (*[]E, error) {
+	var entity *[]E
+	err := r.DB.First(&entity).Error
+	if err != nil {
+		return nil, err
+	}
+	return entity, nil
+}
+
 func (r *GormRepository[E, K]) FindById(id K) (*E, error) {
 	var entity *E
 	err := r.DB.First(&entity, id).Error
@@ -56,10 +65,10 @@ func (r *GormRepository[E, K]) DeleteById(id K) error {
 	return nil
 }
 
-func (r *GormRepository[E, K]) Update(entity *E) error {
+func (r *GormRepository[E, K]) Update(entity *E) (*E, error) {
 	err := r.DB.Save(entity).Error
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return entity, nil
 }
