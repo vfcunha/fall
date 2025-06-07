@@ -7,25 +7,25 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type WebSocketServer struct {
-	connections map[string]*websocket.Conn
+type WebSocketServer[T comparable] struct {
+	connections map[T]*websocket.Conn
 	mu          sync.Mutex
 }
 
-func NewWebSocketServer() *WebSocketServer {
-	return &WebSocketServer{
-		connections: make(map[string]*websocket.Conn),
+func NewWebSocketServer[T comparable]() *WebSocketServer[T] {
+	return &WebSocketServer[T]{
+		connections: make(map[T]*websocket.Conn),
 	}
 }
 
-func (s *WebSocketServer) AddConnection(clientID string, conn *websocket.Conn) {
+func (s *WebSocketServer[T]) AddConnection(clientID T, conn *websocket.Conn) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.connections[clientID] = conn
 	fmt.Printf("Client %s connected\n", clientID)
 }
 
-func (s *WebSocketServer) RemoveConnection(clientID string) {
+func (s *WebSocketServer[T]) RemoveConnection(clientID T) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, ok := s.connections[clientID]; ok {
@@ -34,7 +34,7 @@ func (s *WebSocketServer) RemoveConnection(clientID string) {
 	}
 }
 
-func (s *WebSocketServer) SendMessage(clientID string, message []byte) {
+func (s *WebSocketServer[T]) SendMessage(clientID T, message []byte) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
