@@ -1,6 +1,7 @@
 package fall
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -23,6 +24,10 @@ func NewRouter(prefix string, middlewares ...Middleware) *Router {
 		chain:    middlewares,
 	}
 }
+
+type contextKey string
+
+const patternContextKey contextKey = "fall.pattern"
 
 func (r *Router) Use(mw ...Middleware) {
 	r.chain = append(r.chain, mw...)
@@ -76,12 +81,19 @@ func (r *Router) Options(path string, fn http.HandlerFunc, mws ...Middleware) {
 }
 
 func (r *Router) handle(method, path string, fn http.HandlerFunc, mws ...Middleware) {
-	slog.Info(fmt.Sprintf("%s %s", method, path))
-	r.Handle(fmt.Sprintf("%s %s", method, path), r.wrap(fn, mws...))
+	fullPattern := fmt.Sprintf("%s %s", method, path)
+	slog.Info(fullPattern)
+	r.Handle(fmt.Sprintf("%s %s", method, path), r.wrap(fn, fullPattern, mws...))
 }
 
-func (r *Router) wrap(fn http.HandlerFunc, mws ...Middleware) (out http.Handler) {
-	out, mwss := http.Handler(fn), append(r.chain, mws...)
+func (r *Router) wrap(fn http.HandlerFunc, routePattern string, mws ...Middleware) (out http.Handler) {
+	baseHandler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		ctx := context.WithValue(req.Context(), patternContextKey, routePattern)
+		req = req.WithContext(ctx)
+		fn(w, req)
+	})
+
+	out, mwss := http.Handler(baseHandler), append(r.chain, mws...)
 	for i := len(mwss) - 1; i >= 0; i-- {
 		out = mwss[i](out)
 	}
