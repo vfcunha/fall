@@ -5,6 +5,10 @@ type Enviroment string
 type Repository interface {
 }
 
+type validator interface {
+	Validate() error
+}
+
 type Initializable interface {
 	Init() error
 }

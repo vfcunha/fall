@@ -3,6 +3,7 @@ package fall
 import (
 	"fmt"
 	"log"
+	"strings"
 )
 
 func PanicMsgIfError(err error, message string) {
@@ -33,7 +34,17 @@ func LogIfError(err error, msg string) {
 	}
 }
 
-// type ErrorInterceptor[R any] =
+func PanicIfResultErrors(results ...Resulter) {
+	var errs []string
+	for _, result := range results {
+		if result.Err() != nil {
+			errs = append(errs, result.Err().Error())
+		}
+	}
+	if len(errs) > 0 {
+		panic(strings.Join(errs, "\n"))
+	}
+}
 
 func InterceptErrorp[R any](interceptor func() (R, error), errMessage string) (R, error) {
 	algo, err := interceptor()

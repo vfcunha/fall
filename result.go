@@ -56,6 +56,16 @@ func ValidateResults(results ...Resulter) bool {
 	return true
 }
 
+func GetErrors(results ...Resulter) []error {
+	errors := make([]error, 0)
+	for _, result := range results {
+		if result.Err() != nil {
+			errors = append(errors, result.Err())
+		}
+	}
+	return errors
+}
+
 type ErrorsDTO struct {
 	Errors []string `json:"errors"`
 }
