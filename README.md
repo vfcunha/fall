@@ -117,11 +117,11 @@ To create a group, use the `Group` method on the `fall.Router`:
 
 ```go
 // Create a group for API v1 routes
-apiV1 := router.Group("/api/v1")
-
-// Add routes to the group
-apiV1.Get("/users", getUsersHandler) // Path: /api/v1/users
-apiV1.Post("/products", createProductHandler) // Path: /api/v1/products
+router.Group("/api/v1", func(apiV1 *fall.Router) {
+    // Add routes to the group
+    apiV1.Get("/users", getUsersHandler) // Path: /api/v1/users
+    apiV1.Post("/products", createProductHandler) // Path: /api/v1/products
+})
 ```
 
 ### Middleware
