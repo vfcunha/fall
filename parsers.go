@@ -98,32 +98,32 @@ type MultipartFile struct {
 	Header *multipart.FileHeader
 }
 
-func GetClaimString(r *http.Request, key any) Result[string] {
+func GetContextString(r *http.Request, key any) Result[string] {
 	value, ok := r.Context().Value(key).(string)
 	if !ok {
-		return NewResult("", fmt.Errorf("invalid claim %s", key))
+		return NewResult("", fmt.Errorf("invalid context %s", key))
 	}
 	return NewResult(value, nil)
 }
 
-func GetClaim[T any](r *http.Request, key any) Result[T] {
+func GetContextValue[T any](r *http.Request, key any) Result[T] {
 	ctxValue := r.Context().Value(key)
 	if ctxValue == nil {
 		var zero T
-		return NewResult(zero, fmt.Errorf("claim %v not found in context", key))
+		return NewResult(zero, fmt.Errorf("context key %v not found in context", key))
 	}
 	value, ok := ctxValue.(T)
 	if !ok {
 		var zero T
 		actualType := fmt.Sprintf("%T", ctxValue)
 		expectedType := fmt.Sprintf("%T", zero)
-		return NewResult(zero, fmt.Errorf("invalid claim type for %v - expected %s, got %s",
+		return NewResult(zero, fmt.Errorf("invalid context type for %v - expected %s, got %s",
 			key, expectedType, actualType))
 	}
 	return NewResult(value, nil)
 }
 
-func GetClaimNumber[T uint8 | uint16 | uint32 | uint64 | int8 | int16 | int32 | int64 | float32 | float64 | int](r *http.Request, key any) Result[T] {
+func GetContextNumber[T uint8 | uint16 | uint32 | uint64 | int8 | int16 | int32 | int64 | float32 | float64 | int](r *http.Request, key any) Result[T] {
 	switch v := r.Context().Value(key).(type) {
 	case uint8:
 		return NewResult(T(v), nil)
@@ -149,26 +149,26 @@ func GetClaimNumber[T uint8 | uint16 | uint32 | uint64 | int8 | int16 | int32 | 
 		return NewResult(T(v), nil)
 	default:
 		var zero T
-		return NewResult(zero, fmt.Errorf("claim %v is not a number (got %T)", key, v))
+		return NewResult(zero, fmt.Errorf("context key %v is not a number (got %T)", key, v))
 	}
 }
 
-func GetClaimInt64(r *http.Request, key any) Result[int64] {
+func GetContextInt64(r *http.Request, key any) Result[int64] {
 	value := r.Context().Value(key)
 	if value == nil {
-		return NewResult(int64(0), fmt.Errorf("invalid claim %s", key))
+		return NewResult(int64(0), fmt.Errorf("invalid context %s", key))
 	}
 	return NewResult(value.(int64), nil)
 }
 
-func GetClaimUUID(r *http.Request, key any) Result[uuid.UUID] {
+func GetContextUUID(r *http.Request, key any) Result[uuid.UUID] {
 	value, ok := r.Context().Value(key).(string)
 	if !ok {
-		return NewResult(uuid.UUID{}, fmt.Errorf("invalid claim %s", key))
+		return NewResult(uuid.UUID{}, fmt.Errorf("invalid context %s", key))
 	}
 	result, err := uuid.Parse(value)
 	if err != nil {
-		return NewResult(uuid.UUID{}, fmt.Errorf("invalid claim %s", key))
+		return NewResult(uuid.UUID{}, fmt.Errorf("invalid context %s", key))
 	}
 	return NewResult(result, nil)
 }
