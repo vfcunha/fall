@@ -90,7 +90,15 @@ func Cookie(r *http.Request, name string) Result[*http.Cookie] {
 
 func BodyTextPlain(r *http.Request) Result[string] {
 	responseData, err := io.ReadAll(r.Body)
-	return NewResult(string(responseData), err)
+	defer r.Body.Close()
+	if err != nil {
+		return NewResult("", err)
+	}
+	var result string
+	if err := json.Unmarshal(responseData, &result); err == nil {
+		return NewResult(result, nil)
+	}
+	return NewResult(string(responseData), nil)
 }
 
 type MultipartFile struct {
