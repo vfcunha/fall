@@ -1,6 +1,6 @@
 package fall
 
-type Enviroment string
+type Environment string
 
 type Repository interface {
 }
@@ -22,5 +22,5 @@ type UseCase[I any, O any] interface {
 }
 
 type EnvConfiguration interface {
-	Configure(env Enviroment) error
+	Configure(env Environment) error
 }

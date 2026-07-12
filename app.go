@@ -7,20 +7,22 @@ import (
 )
 
 type App struct {
-	Env         Enviroment `env:"ENV" envDefault:"Development"`
+	Env         Environment `env:"ENV" envDefault:"Development"`
 	router      *Router
 	middlewares []Middleware
 }
 
-func NewApp(env Enviroment, envConfig EnvConfiguration, middlewares ...Middleware) (*App, error) {
+func NewApp(env Environment, envConfig EnvConfiguration, middlewares ...Middleware) (*App, error) {
 	app := App{
 		Env:         env,
 		router:      NewRouter(""),
 		middlewares: middlewares,
 	}
-	err := envConfig.Configure(env)
-	if err != nil {
-		return nil, err
+	if envConfig != nil {
+		err := envConfig.Configure(env)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	app.SetControllers(
