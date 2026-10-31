@@ -41,6 +41,11 @@ func NewPage[T any](content []T, number, size int, totalElements int64) Page[T] 
 	}
 }
 
+type Pageable struct {
+	Page int `json:"page"`
+	Size int `json:"size"`
+}
+
 type GormRepository[E any, K any] struct {
 	DB *gorm.DB `fall:"database"`
 }
@@ -108,12 +113,12 @@ func (r *GormRepository[E, K]) Update(entity *E) (*E, error) {
 	return entity, nil
 }
 
-func (r *GormRepository[E, K]) FindPage(query *gorm.DB, page, size int) (Page[E], error) {
-	if page < 0 {
-		page = 0
+func (r *GormRepository[E, K]) FindPage(query *gorm.DB, pageable Pageable) (Page[E], error) {
+	if pageable.Page < 0 {
+		pageable.Page = 0
 	}
-	if size < 1 {
-		size = 10
+	if pageable.Size < 1 {
+		pageable.Size = 10
 	}
 
 	var total int64
@@ -123,10 +128,10 @@ func (r *GormRepository[E, K]) FindPage(query *gorm.DB, page, size int) (Page[E]
 	}
 
 	var results []E
-	offset := page * size
-	if err := query.Offset(offset).Limit(size).Find(&results).Error; err != nil {
+	offset := pageable.Page * pageable.Size
+	if err := query.Offset(offset).Limit(pageable.Size).Find(&results).Error; err != nil {
 		return Page[E]{}, err
 	}
 
-	return NewPage(results, page, size, total), nil
+	return NewPage(results, pageable.Page, pageable.Size, total), nil
 }

@@ -23,6 +23,24 @@ func QueryValue(r *http.Request, key string) Result[string] {
 	return NewResult(r.URL.Query().Get(key), nil)
 }
 
+func GetPageableDefault(r *http.Request) Result[Pageable] {
+	return GetPageableParams(r, Pageable{Page: 0, Size: 10})
+}
+
+func GetPageableParams(r *http.Request, defaultValue Pageable) Result[Pageable] {
+	pageStr := r.URL.Query().Get("page")
+	sizeStr := r.URL.Query().Get("size")
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 0 {
+		page = defaultValue.Page
+	}
+	size, err := strconv.Atoi(sizeStr)
+	if err != nil || size < 1 {
+		size = defaultValue.Size
+	}
+	return NewResult(Pageable{Page: page, Size: size}, nil)
+}
+
 func PathValueUUID(r *http.Request, key string) Result[uuid.UUID] {
 	return NewResult(uuid.Parse(r.PathValue(key)))
 }
@@ -214,10 +232,14 @@ func ReplyJsonOrError(result any, err error, w http.ResponseWriter, r *http.Requ
 		http.Error(w, err.Error(), status)
 		return
 	}
-	if result != nil && !isSliceEmpty(result) {
+	if result != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(result)
+		if isSliceEmpty(result) {
+			json.NewEncoder(w).Encode([]any{})
+		} else {
+			json.NewEncoder(w).Encode(result)
+		}
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
