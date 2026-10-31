@@ -10,6 +10,17 @@ import (
 
 var defaultLayout = ""
 var partialsTemplates = []string{}
+var customTemplateFuncs = template.FuncMap{}
+
+func RegisterTemplateFunc(name string, fn any) {
+	customTemplateFuncs[name] = fn
+}
+
+func RegisterTemplateFuncs(funcs template.FuncMap) {
+	for name, fn := range funcs {
+		customTemplateFuncs[name] = fn
+	}
+}
 
 func LoadPartials() {
 	err := scanPartials("web/views/partials")
@@ -53,7 +64,8 @@ func RenderWithLayout(w http.ResponseWriter, r *http.Request, data any, layout s
 		tmpl = append(tmpl, "web/views/layouts/"+layout+".html")
 	}
 
-	t, err := template.ParseFiles(tmpl...)
+	// Use o primeiro arquivo como base do template
+	t, err := template.New(filepath.Base(tmpl[0])).Funcs(customTemplateFuncs).ParseFiles(tmpl...)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
